@@ -1,5 +1,7 @@
 #include "head.h"
 
+#define BUF_LEN 128
+
 /**
  * @brief   接收信息模块
  * @param   arg 无
@@ -7,6 +9,30 @@
  */
 void *rcv_msg(void *arg)
 {
+    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd == -1)
+    {
+        perror("socket()失败");
+        pthread_exit(NULL);
+    }
+
+    struct sockaddr_in addr;
+    socklen_t len = sizeof(addr);
+    bzero(&addr, len);
+
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_ANY); /* 自动获取本地IP */
+    addr.sin_port = htons(54321);             /* host to network short */
+
+    bind(sockfd, (struct sockaddr *)&addr, len);
+
+    char *buf = calloc(1, BUF_LEN);
+    while (1)
+    {
+        bzero(buf, BUF_LEN);
+        recvfrom(sockfd, buf, BUF_LEN, 0, NULL, NULL);
+        printf("rcv: %s", buf);
+    }
 }
 
 /**
@@ -16,6 +42,30 @@ void *rcv_msg(void *arg)
  */
 void *snd_msg(void *IP)
 {
+    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd == -1)
+    {
+        perror("socket()失败");
+        pthread_exit(NULL);
+    }
+
+    struct sockaddr_in addr;
+    socklen_t len = sizeof(addr);
+    bzero(&addr, len);
+
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = inet_addr((char *)IP);
+    addr.sin_port = htons(54321); /* host to network short */
+
+    /* 给对方发数据 */
+    char *buf = calloc(1, BUF_LEN);
+    while (1)
+    {
+        bzero(buf, BUF_LEN);
+        fgets(buf, BUF_LEN, stdin);
+
+        sendto(sockfd, buf, strlen(buf), 0, (struct sockaddr *)&addr, len);
+    }
 }
 
 /**
